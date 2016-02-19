@@ -1,6 +1,7 @@
 import scipy.io as scio
 import scipy.stats as scistats
 import numpy as np
+import math
 from operator import itemgetter
 import math
 import pdb
@@ -25,7 +26,6 @@ class Leaf(object):
 #Note A is negative. Meaning it contains attributes that have been used
 def BuildTree(S, A, depth):
     if depth == 0 or isPure(S): #need conditional to check purity
-        #pdb.set_trace()
         return Leaf(Classification(S))
 
     srTup = GetSplits(S, A)
@@ -61,14 +61,14 @@ def GetSplits(S, A):
     return max(reductions, key = itemgetter(4))
 
 def UncertaintyReduction(S, S1, S2):
-    uS = Entropy(np.count_nonzero(S[:, N_ATTR]) / len(S)) #num of positives in S
-    uS1 = Entropy(0)
-    uS2 = Entropy(0)
+    uS = ClassificationError(np.count_nonzero(S[:, N_ATTR]) / len(S)) #num of positives in S
+    uS1 = ClassificationError(0)
+    uS2 = ClassificationError(0)
 
     if len(S1) != 0:
-        uS1 = Entropy(np.count_nonzero(S1[:, N_ATTR]) / len(S1))
+        uS1 = ClassificationError(np.count_nonzero(S1[:, N_ATTR]) / len(S1))
     if len(S2) != 0:
-        uS2 = Entropy(np.count_nonzero(S2[:, N_ATTR]) / len(S2))
+        uS2 = ClassificationError(np.count_nonzero(S2[:, N_ATTR]) / len(S2))
 
     pS1 = len(S1) / len(S)
     pS2 = len(S2) / len(S)
@@ -82,6 +82,11 @@ def isPure(S):
 def Entropy(proportion):
     return scistats.entropy([proportion, 1 - proportion])
 
+def GiniIndex(proportion):
+    return (1 - (math.pow(proportion, 2) + math.pow(1 - proportion, 2)))
+
+def ClassificationError(proportion):
+    return (1 - max(proportion, 1 - proportion))
 
 def Classify(T, node):
     if type(node) is Leaf:
@@ -107,5 +112,5 @@ train_data = scio.loadmat('spam.mat')['train_spam']
 test_data = scio.loadmat('spam.mat')['test_spam']
 
 root = BuildTree(train_data, [], 6)
-error = ComputeError(test_data, root)
+error = ComputeError(train_data, root)
 print(error)
